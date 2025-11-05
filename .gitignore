@@ -1,4 +1,5 @@
 embedded.txt
+composer.phar
 .DS_Store
 /.release
 /packages
