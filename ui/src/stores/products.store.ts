@@ -1,39 +1,47 @@
-// src/store/products.store.ts
 import { defineStore } from 'pinia'
-import * as api from '@/api/products.api'
+import type { Product } from '@/api/products.api'
+import * as ProductApi from '@/api/products.api'
+import { runAsync } from '@/utils/runAsync'
 
 export const useProductsStore = defineStore('products', {
-	state: () => ({
-		items: [] as any[],
-		loading: false,
-		selected: null as any | null,
-	}),
+  state: () => ({
+    items: [] as Product[],
+    selected: null as Product | null,
+    loading: false,
+    saving: false,
+    error: null as string | null,
+  }),
 
-	getters: {
-		byId: (state) => (id: number) => state.items.find((p) => p.id === id),
-	},
+  actions: {
+    async loadAll() {
+      const resp = await runAsync(this, () => ProductApi.fetchProducts())
+      this.items = resp.data
+    },
 
-	actions: {
-		async load() {
-			this.loading = true
-			const { data } = await api.fetchProducts()
-			this.items = data
-			this.loading = false
-		},
+    async select(id: number) {
+      const resp = await runAsync(this, () => ProductApi.fetchProduct(id))
+      this.selected = resp.data
+    },
 
-		async select(id: number) {
-			const { data } = await api.fetchProduct(id)
-			this.selected = data
-		},
+    clearSelected() {
+      this.selected = null
+    },
 
-		async create(product: any) {
-			await api.createProduct(product)
-			await this.load()
-		},
-
-		async update(id: number, product: any) {
-			await api.updateProduct(id, product)
-			await this.load()
-		},
-	},
+    async save(product: Product) {
+      await runAsync(this, async () => {
+        let id = product.id
+        if (id) {
+          await ProductApi.updateProductCoreFields(id, product)
+        } else {
+          const resp = await ProductApi.createProduct(product)
+          id = resp.data.id
+        }
+        if (product.userfields) {
+          await ProductApi.updateProductUserfields(id, product.userfields)
+        }
+        await this.loadAll()
+        this.selected = null
+      }, 'saving')
+    },
+  },
 })

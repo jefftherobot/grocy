@@ -1,30 +1,40 @@
 <script setup lang="ts">
 import { useProductsStore } from '@/stores/products.store'
 import { ref, watch } from 'vue'
+import type { Product } from '@/api/products.api'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits(['update:open'])
 
 const store = useProductsStore()
-const form = ref({ name: '', barcode: '' })
 
+// Full product form model
+const emptyProduct: Product = {
+	name: '',
+	active: 1,
+	userfields: {},
+}
+
+const form = ref<Product>({ ...emptyProduct })
+
+// Fill form whenever a product is selected
 watch(
 	() => store.selected,
 	(p) => {
-		form.value = p ? { ...p } : { name: '', barcode: '' }
+		form.value = p ? JSON.parse(JSON.stringify(p)) : { ...emptyProduct }
 	},
-)
-watch(
-	() => props.open,
-	(o) => !o && (form.value = { name: '', barcode: '' }),
+	{ immediate: true },
 )
 
+// Reset form whenever modal closes
+watch(
+	() => props.open,
+	(o) => !o && (form.value = { ...emptyProduct }),
+)
+
+// --- Save Function ---
 async function save() {
-	if (store.selected) {
-		await store.update(store.selected.id, form.value)
-	} else {
-		await store.create(form.value)
-	}
+	await store.save(form.value)
 	emit('update:open', false)
 }
 </script>
@@ -36,11 +46,13 @@ async function save() {
 				{{ store.selected ? 'Edit Product' : 'New Product' }}
 			</h2>
 
-			<label>Name</label>
+			<!-- Name -->
+			<label class="label"><span class="label-text">Name</span></label>
 			<input v-model="form.name" class="input input-bordered w-full mb-2" />
 
-			<label>Barcode</label>
-			<input v-model="form.barcode" class="input input-bordered w-full mb-4" />
+			<!-- Description -->
+			<label class="label"><span class="label-text">Description</span></label>
+			<input v-model="form.description" class="input input-bordered w-full mb-2" />
 
 			<div class="text-right">
 				<button class="btn mr-2" @click="$emit('update:open', false)">Cancel</button>
