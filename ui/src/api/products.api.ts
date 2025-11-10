@@ -1,6 +1,6 @@
 // src/api/products.api.ts
-import axios from '@/api/axiosInstance'
-export interface Product {
+import axios from './axiosInstance'
+export type Product = {
 	id?: number
 	name: string
 	description?: string
@@ -19,7 +19,7 @@ export interface Product {
 
 // Get all products
 export function fetchProducts() {
-	return axios.get('/objects/products')
+	return axios.get('/objects/products').then(r => r.data)
 }
 
 /*
@@ -40,18 +40,18 @@ export async function fetchProduct(id: number) {
 }
 
 // Create product (core fields only)
-export function createProduct(data: Product) {
-	const { userfields, ...corefields } = data
-	return axios.post('/objects/products', corefields)
+export function createProduct(product: Product) {
+	const { userfields, ...corefields } = product
+	return axios.post('/objects/products', corefields).then(r => r.data)
 }
 
 // Update product (core fields only)
-export function updateProductCoreFields(id: number, data: Product) {
-	const { userfields, ...corefields } = data
-	return axios.put(`/objects/products/${id}`, corefields)
+export function updateProductCoreFields(id: number, product: Product) {
+	const { userfields, ...corefields } = product
+	return axios.put(`/objects/products/${id}`, corefields).then(r => r.data)
 }
 
 // Update only the userfields
-export function updateProductUserfields(id: number, userfields: any) {
-	return axios.put(`/userfields/products/${id}`, userfields)
+export function updateProductUserfields(id: number, userfields: Record<string, any>) {
+	return axios.put(`/userfields/products/${id}`, userfields).then(r => r.data)
 }
