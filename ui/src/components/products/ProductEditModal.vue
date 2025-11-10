@@ -1,63 +1,83 @@
 <script setup lang="ts">
-import { useProductsStore } from '@/stores/products.store'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import * as ProductApi from '@/api/products.api'
 import type { Product } from '@/api/products.api'
 
-const props = defineProps<{ open: boolean }>()
-const emit = defineEmits(['update:open'])
+const props = defineProps<{
+  open: boolean
+  productId: number | null
+}>()
 
-const store = useProductsStore()
+const emit = defineEmits<{
+  (e: 'update:open', v: boolean): void
+}>()
 
-// Full product form model
-const emptyProduct: Product = {
-	name: '',
-	active: 1,
-	userfields: {},
-}
+const queryClient = useQueryClient()
 
-const form = ref<Product>({ ...emptyProduct })
+const productQuery = useQuery({
+  queryKey: ['product', props.productId],
+  queryFn: () => ProductApi.fetchProduct(props.productId!),
+  enabled: false
+})
 
-// Fill form whenever a product is selected
+const form = ref<Product>({
+  name: '',
+  description: '',
+  userfields: {}
+})
+
 watch(
-	() => store.selected,
-	(p) => {
-		form.value = p ? JSON.parse(JSON.stringify(p)) : { ...emptyProduct }
-	},
-	{ immediate: true },
+  () => props.productId,
+  async (id) => {
+    if (id != null) {
+      const result = await productQuery.refetch()
+      if (result.data?.data) {
+        form.value = { ...result.data.data }
+      }
+    } else {
+      // New product → reset immediately
+      form.value = { name: '', description: '', userfields: {} }
+    }
+  },
+  { immediate: true }
 )
 
-// Reset form whenever modal closes
-watch(
-	() => props.open,
-	(o) => !o && (form.value = { ...emptyProduct }),
-)
+const saveMutation = useMutation({
+  mutationFn: async (p: Product) => {
+    let id = p.id
+    if (!id) {
+      const created = await ProductApi.createProduct(p)
+      id = created.id
+    } else {
+      await ProductApi.updateProductCoreFields(id, p)
+    }
+    if (p.userfields) {
+      await ProductApi.updateProductUserfields(id!, p.userfields)
+    }
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['products'] })
+    emit('update:open', false)
+  }
+})
 
-// --- Save Function ---
-async function save() {
-	await store.save(form.value)
-	emit('update:open', false)
+function save() {
+  saveMutation.mutate(form.value)
 }
 </script>
 
 <template>
-	<div v-if="open" class="modal">
-		<div class="modal-box">
-			<h2 class="text-lg font-bold mb-4">
-				{{ store.selected ? 'Edit Product' : 'New Product' }}
-			</h2>
+  <div v-if="open" class="modal">
+   	<div>
+      <h2>{{ productId ? 'Edit Product' : 'New Product' }}</h2>
+      <input v-model="form.name"/>
+      <textarea v-model="form.description"></textarea>
+      <div>
+        <button  @click="emit('update:open', false)">Cancel</button>
+        <button  @click="save">Save</button>
+      </div>
+    </div>
+  </div>
 
-			<!-- Name -->
-			<label class="label"><span class="label-text">Name</span></label>
-			<input v-model="form.name" class="input input-bordered w-full mb-2" />
-
-			<!-- Description -->
-			<label class="label"><span class="label-text">Description</span></label>
-			<input v-model="form.description" class="input input-bordered w-full mb-2" />
-
-			<div class="text-right">
-				<button class="btn mr-2" @click="$emit('update:open', false)">Cancel</button>
-				<button class="btn btn-primary" @click="save">Save</button>
-			</div>
-		</div>
-	</div>
 </template>

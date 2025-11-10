@@ -14,6 +14,7 @@ const emit = defineEmits<{
 	<table>
 		<tr v-for="p in products" :key="p.id">
 			<td>{{ p.name }}</td>
+			<td>{{ p.description }}</td>
 			<td>
 				<button @click="emit('edit', p.id!)">Edit</button>
 			</td>
