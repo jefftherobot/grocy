@@ -4,3 +4,4 @@ composer.phar
 /.release
 /packages
 /public/packages
+node_modules

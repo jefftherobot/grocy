@@ -1,38 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
-import * as ProductApi from '@/api/products.api'
-import ProductTable from '@/components/products/ProductTable.vue'
-import ProductEditModal from '@/components/products/ProductEditModal.vue'
+import { useProducts } from '@/composables/products.queries'
 
-const showModal = ref(false)
-const selectedProductId = ref<number | null>(null)
+const { data, isLoading } = useProducts();
 
-const { isPending, isError, data, error } = useQuery({
-	queryKey: ['products'],
-	queryFn: ProductApi.fetchProducts
-})
-
-function editProduct(id: number) {
-  selectedProductId.value = id
-  showModal.value = true
-}
+const emit = defineEmits<{
+	edit: [id: number]
+}>()
 
 </script>
 
 <template>
-	<span v-if="isPending">Loading...</span>
-	<span v-else-if="isError">Error: {{ error.message }}</span>
-	<!-- We can assume by this point that `isSuccess === true` -->
+  <div v-if="isLoading">Loading...</div>
 
-	<ProductTable
-      v-else
-      :products="data ?? []"
-      @edit="editProduct"
-    />
+  <ul v-else>
+    <li v-for="product in data" :key="product.id">
+      {{ product.name }}
+    </li>
+  </ul>
 
-    <ProductEditModal
-      v-model:open="showModal"
-      :productId="selectedProductId"
-    />
 </template>
