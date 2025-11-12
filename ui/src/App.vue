@@ -1,3 +1,5 @@
+<script setup>
+</script>
 <template>
 	<div>
 		<aside>
@@ -11,7 +13,3 @@
 		</main>
 	</div>
 </template>
-
-<script setup>
-
-</script>
