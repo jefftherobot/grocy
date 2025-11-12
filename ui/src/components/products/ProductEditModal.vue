@@ -1,73 +1,60 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useProduct, useUpdateProductCoreFields } from '@/composables/products.queries';
+import { useProduct, useUpdateProductCoreFields, useUpdateProductUserfields } from '@/queries/useProducts'
 
-const props = defineProps<{ id: number }>();
-const emit = defineEmits(['close']);
+const props = defineProps<{
+  id: number | null
+}>()
 
-const { data: product, isLoading } = useProduct(props.id);
-const updateCore = useUpdateProductCoreFields(props.id);
+const emit = defineEmits<{
+  close: []
+}>()
 
-// Form state
-const form = ref({
-  name: '',
-  description: ''
-});
+// Fetch single product
+const { data: product, isLoading } = useProduct(() => props.id ?? 0)
 
-// When data loads, populate form
-watch(product, (p) => {
-	if (!p) return;
-  form.value.name = p.name;
-  form.value.description = p.description ?? '';
-  },
-	{
-    immediate: true,
+// Get mutation functions
+const updateCoreFields = useUpdateProductCoreFields(() => props.id ?? 0)
+const updateUserfields = useUpdateProductUserfields(() => props.id ?? 0)
+
+async function handleSave() {
+  if (!product.value) return
+
+  try {
+    // Update core fields
+    await updateCoreFields.mutateAsync(product.value)
+
+    // Update userfields if they exist
+    if (product.value.userfields) {
+      await updateUserfields.mutateAsync(product.value.userfields)
+    }
+
+    emit('close')
+  } catch (error) {
+    console.error('Failed to update product:', error)
   }
-);
-
-async function save() {
-  await updateCore.mutateAsync({
-    ...product.value,
-    ...form.value
-  });
-  emit('close');
 }
 </script>
 
 <template>
-  <div class="modal-overlay">
-    <div class="modal">
-      <h2>Edit Product</h2>
+  <div class="modal-overlay" @click="emit('close')">
+    <div class="modal-content" @click.stop>
       <div v-if="isLoading">Loading product...</div>
-      <form v-else @submit.prevent="save">
-        <label>
-          Name:
-          <input v-model="form.name" type="text" />
-        </label>
-        <label>
-          Description:
-          <textarea v-model="form.description"></textarea>
-        </label>
-        <button type="submit">Save</button>
-        <button type="button" @click="$emit('close')">Cancel</button>
-      </form>
+
+      <div v-else-if="product">
+        <h2>Edit Product</h2>
+
+        <form @submit.prevent="handleSave">
+          <input v-model="product.name" placeholder="Name" />
+          <input v-model="product.description" placeholder="Description" />
+
+          <div class="actions">
+            <button type="submit" :disabled="updateCoreFields.isPending">
+              {{ updateCoreFields.isPending ? 'Saving...' : 'Save' }}
+            </button>
+            <button type="button" @click="emit('close')">Cancel</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.modal {
-  background: white;
-  padding: 1rem;
-  border-radius: 6px;
-  min-width: 300px;
-}
-</style>
