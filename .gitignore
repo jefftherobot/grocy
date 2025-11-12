@@ -5,3 +5,4 @@ composer.phar
 /packages
 /public/packages
 node_modules
+*.sublime*
