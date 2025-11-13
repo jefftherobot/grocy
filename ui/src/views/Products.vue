@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useProducts } from '@/queries/useProducts'
-import EditProductModal from '@/components/products/ProductEditModal.vue'
-
 // Fetch all products
 const { data, isLoading, error } = useProducts()
 
@@ -39,29 +37,18 @@ function closeModal() {
 			<td></td>
 			<td></td>
 			<td>
-				<button class="btn" @click="openEdit(product.id ?? 0)">Edit</button>
+				<button class="btn" @click="$router.push({ name: 'ProductDetail', params: { id: product.id } })">View</button>
+			</td>
+			<td>
+				<button class="btn" @click="$router.push({ name: 'ProductEdit', params: { id: product.id } })">Edit</button>
+			</td>
+			<td>
+				
 			</td>
 		</tr>
     </tbody>
   </table>
 </div>
-
-<dialog id="my_modal_1" class="modal" :class="{ 'modal-open': editingProductId }">
-
-	<EditProductModal
-		:id="editingProductId"
-		@close="closeModal"
-	/>
-  <!-- <div class="modal-box">
-    <h3 class="text-lg font-bold">Hello!</h3>
-    <p class="py-4">Press ESC key or click the button below to close</p>
-    <div class="modal-action">
-      <form method="dialog">
-        <button class="btn">Close</button>
-      </form>
-    </div>
-  </div> -->
-</dialog>
 <!-- 	-->
 </template>
 
