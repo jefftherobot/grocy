@@ -1,5 +1,5 @@
 <script setup lang="ts">
-	import { useProduct, useUpdateProductCoreFields, useUpdateProductUserfields } from '@/queries/useProducts'
+	import { useProduct, useUpdateProductCoreFields, useUpdateProductUserfields } from '@/composables/useProducts'
 
 	const props = defineProps<{
 		id: number | null

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
-import { useProduct } from '@/queries/useProducts'
+import { useProduct } from '@/composables/useProducts'
 
 const route = useRoute()
 const router = useRouter()
